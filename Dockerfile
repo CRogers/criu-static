@@ -16,25 +16,28 @@ RUN apk update && \
             pkgconfig \
             libnet-dev \
             ccache \
-            gcc
+            gcc \
+            patchelf
 
-RUN wget http://download.openvz.org/criu/criu-3.12.tar.bz2
-RUN tar -xjf criu-3.12.tar.bz2
+RUN wget http://download.openvz.org/criu/criu-3.13.tar.bz2 && \
+        tar -xjf criu-3.13.tar.bz2 && \
+        mv criu-*/ criu && \
+        rm criu-*.bz2
 
-WORKDIR /criu-3.12
+WORKDIR /criu
 
 RUN make
 
-RUN apk add cdrkit
+RUN patchelf --set-interpreter /criu/ld-musl-x86_64.so.1 --set-rpath /criu criu/criu
 
-WORKDIR /
+RUN patchelf --replace-needed libc.musl-x86_64.so.1 ld-musl-x86_64.so.1 criu/criu
 
-RUN mkdir -p /criu-iso/usr/lib
+FROM ubuntu
 
-RUN cp criu-3.12/criu/criu criu-iso && cp \ 
+COPY --from=build \
+        /criu/criu/criu \
+        /lib/ld-musl-x86_64.so.1 \
         /usr/lib/libnl-3.so.200 \
         /usr/lib/libprotobuf-c.so.1 \
         /usr/lib/libnet.so.1 \
-        /criu-iso/usr/lib
-
-RUN mkisofs -allow-lowercase -o /criu.iso /criu-iso
+        /criu/
