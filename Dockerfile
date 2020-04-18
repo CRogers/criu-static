@@ -58,9 +58,8 @@ RUN mkdir /static && \
     cp -r /usr/lib/xtables /static/xtables
 
 COPY criu /static/criu
-RUN chmod +x criu
 
 
-FROM scratch
+FROM ubuntu
 
 COPY --from=build /static/ /criu/
