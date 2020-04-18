@@ -61,6 +61,6 @@ COPY criu /static/criu
 RUN chmod +x criu
 
 
-FROM ubuntu
+FROM scratch
 
 COPY --from=build /static/ /criu/
