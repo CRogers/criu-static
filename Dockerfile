@@ -37,12 +37,13 @@ RUN for program in criu/criu iptables; do \
         patchelf --replace-needed libc.musl-x86_64.so.1 ld-musl-x86_64.so.1 "$program"; \
     done
 
-FROM ubuntu
-
-COPY --from=build \
-        # criu itself + deps
-        /criu/criu/criu \
+RUN mkdir /static && \
+    # criu itself
+    cp /criu/criu/criu /static/criu-static && \
+    cp \
+        # musl interpreter
         /lib/ld-musl-x86_64.so.1 \
+        # criu deps
         /usr/lib/libnl-3.so.200 \
         /usr/lib/libprotobuf-c.so.1 \
         /usr/lib/libnet.so.1 \
@@ -52,4 +53,14 @@ COPY --from=build \
         /usr/lib/libip6tc.so.0 \
         /usr/lib/libxtables.so.12 \
         # copy to
-        /criu/
+        /static && \
+    # iptables xtable plugins
+    cp -r /usr/lib/xtables /static/xtables
+
+COPY criu /static/criu
+RUN chmod +x criu
+
+
+FROM ubuntu
+
+COPY --from=build /static/ /criu/
